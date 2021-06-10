@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
+
+    <title>Document</title>
+</head>
+
+<body>
+    <main>
+        <div class="title">現在地の天気</div>
+        <div class="weatherMain">
+            <div class="day">
+                <div>
+                    <div>
+                        <span> 現在の天気</span>
+                    </div>
+                    <div>
+                        <span>天気：</span><span class="dayWeather"></span>
+                    </div>
+                    <div>
+                        <img class="dayWeatherIcon">
+                    </div>
+                    <div>
+                        <span>気温：</span><span class="nowTemp"></span><span>度</span>
+                    </div>
+                </div>
+            </div>
+            <div class="tomorrow">
+                <div>
+                    <div>
+                        <span>明日9時の天気</span>
+                    </div>
+                    <div>
+                        <span>天気：</span><span class="tomorrowWeather"></span>
+                    </div>
+                    <div>
+                        <img class="tomorrowWeatherIcon">
+                    </div>
+                    <div>
+                        <span>気温：</span><span class="tomorrowTemp"></span><span>度</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dayAfterTomorrow">
+                <div>
+                    <div>
+                        <span>明後日9時の天気</span>
+                    </div>
+                    <div>
+                        <span>天気：</span><span class="dayAfterTomorrowWeather"></span>
+                    </div>
+                    <div>
+                        <img class="dayAfterTomorrowWeatherIcon">
+                    </div>
+                    <div>
+                        <span>気温：</span><span class="dayAfterTomorrowTemp"></span><span>度</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <style>
+        html {
+            font-family: fantasy;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 30px;
+            padding: 10px 20px;
+            margin: 2em auto;
+            color: #000;
+            width: 40%;
+            background: #eeeeee;
+            border-left: solid 8px #ffb6c1;
+            border-right: solid 8px #ffb6c1;
+        }
+
+        .weatherMain {
+            display: flex;
+            justify-content: space-around;
+            font-size: 20px;
+            margin-top: 5px;
+        }
+
+        .dayweathericon {
+            width: auto;
+            height: 40px;
+            text-align: center;
+        }
+
+        .day,
+        .tomorrow,
+        .dayAfterTomorrow {
+            margin: 2em auto;
+            padding: 1em;
+            border: 3px dashed #c0c0c0;
+            color: #a0a0a0;
+            background-color: mistyrose;
+
+            border-radius: 1px;
+
+        }
+    </style>
+    <script>
+        {
+            $(document).ready(function () {
+                'use strict'
+
+                const APIKEY = "589df631402c8c42542aef94b5dd2f0d";
+
+                //翌日9時のデータの場所を割り出す
+                const date = new Date();
+                const nowHour = date.getHours();
+                const whichTomorrowWeatherData = Math.floor((24 - nowHour + 9) / 3);
+                const whichDayAfterTomorrowWeatherData = Math.floor((24 - nowHour + 33) / 3);
+
+                //現在位置の取得ができるかどうか
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(success, error);
+
+                    // 現在位置の取得に成功した場合
+                    function success(position) {
+                        const positionData = position.coords;
+
+                        //緯度経度の取得と表示
+                        const lat = positionData.latitude;
+                        const lon = positionData.longitude;
+                        $('.location').text('現在の位置（' + Math.floor(lat * 100) / 100 + ',' + Math.floor(lon * 100) / 100 + ')');
+
+
+                        //現在の天気データを呼び出し
+                        $.ajax({
+                            url: "http://api.openweathermap.org/data/2.5/weather",
+                            dataType: "jsonp",
+                            data: "lat=" + lat + "&lon=" + lon + "&appid=" + APIKEY,
+                            //天気データ呼び出し成功時の挙動
+                            success: function (data) {
+                                if (data.weather[0].main === "Clear") {
+                                    $('body').css('background-image', 'url(Sunny.jpg)');
+                                    $('.dayWeather').text("晴れ");
+                                } else if (data.weather[0].main === "Rain") {
+                                    $('body').css('background-image', 'url(Rain.jpg)');
+                                    $('.dayWeather').text("雨");
+                                } else if (data.weather[0].main === "Clouds") {
+                                    $('body').css('background-image', 'url(Cloudy.jpg)');
+                                    $('.dayWeather').text("くもり");
+                                } else if (data.weather[0].main === "Snow") {
+                                    $('body').css('background-image', 'url(Snowy.jpg)');
+                                    $('.dayWeather').text("雪");
+                                }
+
+                                //各データの表示
+                                $('.nowTemp').text(Math.floor((data.main.temp - 273.15) * 10) / 10);
+                                $('.dayWeatherIcon').attr('src', 'http://openweathermap.org/img/w/' + data.weather[0].icon + '.png ');
+                            }
+                        });
+
+                        //明日9時の天気データを呼び出し
+                        $.ajax({
+                            url: "http://api.openweathermap.org/data/2.5/forecast",
+                            dataType: "jsonp",
+                            data: "lat=" + lat + "&lon=" + lon + "&appid=" + APIKEY,
+                            //天気データ呼び出し成功時の挙動
+                            success: function (data) {
+
+                                //翌日9時の天気データ
+                                const targetData1 = data.list[whichTomorrowWeatherData];
+                                const targetData2 = data.list[whichDayAfterTomorrowWeatherData];
+
+                                if (targetData1.weather[0].main === "Clear") {
+                                    $('.tomorrowWeather').text("晴れ");
+                                } else if (targetData1.weather[0].main === "Rain") {
+                                    $('.tomorrowWeather').text("雨");
+                                } else if (targetData1.weather[0].main === "Clouds") {
+                                    $('.tomorrowWeather').text("くもり");
+                                } else if (targetData1.weather[0].main === "Snow") {
+                                    $('.tomorrowWeather').text("雪");
+                                }
+
+                                if (targetData2.weather[0].main === "Clear") {
+                                    $('.dayAfterTomorrowWeather').text("晴れ");
+                                } else if (targetData2.weather[0].main === "Rain") {
+                                    $('.dayAfterTomorrowWeather').text("雨");
+                                } else if (targetData2.weather[0].main === "Clouds") {
+                                    $('.dayAfterTomorrowWeather').text("くもり");
+                                } else if (targetData2.weather[0].main === "Snow") {
+                                    $('.dayAfterTomorrowWeather').text("雪");
+                                }
+
+                                ///各データの表示
+                                $('.tomorrowTemp').text(Math.floor((targetData1.main.temp - 273.15) * 10) / 10);
+                                $('.tomorrowWeatherIcon').attr('src', 'http://openweathermap.org/img/w/' + targetData1.weather[0].icon + '.png ');
+                                $('.dayAfterTomorrowTemp').text(Math.floor((targetData2.main.temp - 273.15) * 10) / 10);
+                                $('.dayAfterTomorrowWeatherIcon').attr('src', 'http://openweathermap.org/img/w/' + targetData2.weather[0].icon + '.png ');
+                            }
+                        });
+                    }
+
+                    //現在位置の取得に失敗した場合
+                    function error(error) {
+                        alert("位置情報が取得できなかったため、東京の天気を表示します");
+                        $('.location').text('東京');
+
+                        TokyoWeather();
+
+                    }
+                    //現在位置がそもそも取得できない場合
+                } else {
+                    alert("位置情報が取得できなかったため、東京の天気を表示します");
+                    $('.location').text('東京');
+
+                    TokyoWeather();
+                }
+
+                //東京の天気
+                function TokyoWeather() {
+
+                    //現在の天気データ呼び出し
+                    $.ajax({
+                        url: "http://api.openweathermap.org/data/2.5/weather",
+                        dataType: "jsonp",
+                        data: "q=Tokyo,jp&appid=" + APIKEY,
+                        //天気データ呼び出し成功時の挙動
+                        success: function (data) {
+                            if (data.weather[0].main === "Sunny" || data.weather[0].main === "Clear") {
+                                $('body').css('background-image', 'url(Sunny.jpg)');
+                                $('.dayWeather').text("晴れ");
+                            } else if (data.weather[0].main === "Rain") {
+                                $('body').css('background-image', 'url(Rain.jpg)');
+                                $('.dayWeather').text("雨");
+                            } else if (data.weather[0].main === "Clouds") {
+                                $('body').css('background-image', 'url(Cloudy.jpg)');
+                                $('.dayWeather').text("くもり");
+                            } else if (data.weather[0].main === "Snow") {
+                                $('body').css('background-image', 'url(Snowy.jpg)');
+                                $('.dayWeather').text("雪");
+                            }
+
+                            //各データの表示
+                            $('.nowTemp').text(Math.floor((data.main.temp - 273.15) * 10) / 10);
+                            $('.dayWeatherIcon').attr('src', 'http://openweathermap.org/img/w/' + data.weather[0].icon + '.png ');
+                        }
+                    });
+
+                    //翌日9時の天気データを呼び出し
+                    $.ajax({
+                        url: "http://api.openweathermap.org/data/2.5/forecast",
+                        dataType: "jsonp",
+                        data: "q=Tokyo,jp&appid=" + APIKEY,
+                        //天気データ呼び出し成功時の挙動
+                        success: function (data) {
+
+                            //翌日9時の天気データ
+                            const targetData1 = data.list[whichTomorrowWeatherData];
+                            const targetData2 = data.list[whichDayAfterTomorrowWeatherData];
+
+                            if (targetData1.weather[0].main === "Clear") {
+                                $('.tomorrowWeather').text("晴れ");
+                            } else if (targetData1.weather[0].main === "Rain") {
+                                $('.tomorrowWeather').text("雨");
+                            } else if (targetData1.weather[0].main === "Clouds") {
+                                $('.tomorrowWeather').text("くもり");
+                            } else if (targetData1.weather[0].main === "Snow") {
+                                $('.tomorrowWeather').text("雪");
+                            }
+
+                            if (targetData2.weather[0].main === "Clear") {
+                                $('.dayAfterTomorrowWeather').text("晴れ");
+                            } else if (targetData2.weather[0].main === "Rain") {
+                                $('.dayAfterTomorrowWeather').text("雨");
+                            } else if (targetData2.weather[0].main === "Clouds") {
+                                $('.dayAfterTomorrowWeather').text("くもり");
+                            } else if (targetData2.weather[0].main === "Snow") {
+                                $('.dayAfterTomorrowWeather').text("雪");
+                            }
+
+                            ///各データの表示
+                            $('.tomorrowTemp').text(Math.floor((targetData1.main.temp - 273.15) * 10) / 10);
+                            $('.tomorrowWeatherIcon').attr('src', 'http://openweathermap.org/img/w/' + targetData1.weather[0].icon + '.png ');
+                            $('.dayAfterTomorrowTemp').text(Math.floor((targetData2.main.temp - 273.15) * 10) / 10);
+                            $('.dayAfterTomorrowWeatherIcon').attr('src', 'http://openweathermap.org/img/w/' + targetData2.weather[0].icon + '.png ');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+    <div class="top">
+
+        <button id="btn">Fukuoka 今日何着る？</button>
+        <div id="output"></div>
+    </div>
+    <style>
+        .top {
+            justify-content: space-around;
+            text-align: center;
+            font-size: 20px;
+            width: auto;
+            height: 70px;
+        }
+
+        #btn {
+            width: 400px;
+            height: 50px;
+            font-size: 25px;
+            background-color: cadetblue;
+            padding: 10px 20px;
+            margin: 2em auto;
+            color: #000;
+            width: 40%;
+            background: #eeeeee;
+            border-left: solid 8px #ffb6c1;
+            border-right: solid 8px #ffb6c1;
+        }
+
+        #output {
+            flex-direction: row;
+            margin: 2em auto;
+            padding: 1em;
+            width: 90%;
+            background-color: #fff;
+            /* 背景色 */
+            border: 1px solid #ccc;
+            /* 枠線 */
+
+
+
+        }
+    </style>
+
+    <script>
+        const settings = {
+            "async": true,
+            "crossDomain": true,
+            "url": "https://tnql-coords-trial-v2.p.rapidapi.com/v2/api/coords_trial?airport=FKO",
+            "method": "GET",
+            "headers": {
+                "x-rapidapi-key": "a66f264fbbmsh87034c91c7909a2p133635jsn917013c750e6",
+                "x-rapidapi-host": "tnql-coords-trial-v2.p.rapidapi.com"
+            }
+        };
+
+        $.ajax(settings).done(function (response) {
+            console.log(response.results.a);
+            const array = [];
+
+            response.results.a.forEach(function (x) {
+                // var result = value * 2;
+                array.push(`
+               <p>${x.description1}</p>
+               <p>${x.description2}</p>
+               <p>${x.description3}</p>
+               <img src="${x.image}" width="auto" height="200"></a>
+               
+                   `);
+            });
+            $('#output').html(array);
+
+
+        });
+
+
+    </script>
+
+</body>
+
+</html>
